@@ -1,8 +1,6 @@
-
 services:
   ollama:
     image: ollama/ollama:latest
-    container_name: ollama
     ports:
       - "11434:11434"
     volumes:
@@ -10,19 +8,21 @@ services:
     restart: unless-stopped
 
   litellm:
-    image: ghcr.io/berriai/litellm:main
-    container_name: litellm
+    build:
+      context: .
+      args:
+        target: runtime
+    image: docker.litellm.ai/berriai/litellm:main-stable
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
     depends_on:
       - ollama
     ports:
       - "4000:4000"
-    environment:
-      # Set this in a .env file (recommended) or inline here
-      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
     volumes:
-      - ./config.yaml:/app/config.yaml:ro
-    command: ["--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "4000"]
-    restart: unless-stopped
+      - ./config.yaml:/app/config.yaml # Mount the local configuration file
+    # You can change the port or number of workers as per your requirements or pass any new supported CLI argument. Make sure the port passed here matches with the container port defined above in `ports` value
+    command: [ "--config", "/app/config.yaml", "--port", "4000", "--num_workers", "4" ]
 
 volumes:
   ollama_data:
